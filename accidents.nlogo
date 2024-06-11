@@ -5,6 +5,9 @@ globals [
   car-spawn-death-points ;;array for cars to die
   human-spawn-points ;;array for all human sprawn points
   mouse-coordinates
+  p-colors
+  signals-timer
+  show-horizontal-signals
 ]
 
 breed [cars car]
@@ -32,19 +35,32 @@ to go
   ;;display-mouse-coordinates
 
   ; Czekanie na następny krok
-  tick
+  if (signals-timer = 6)[
+    change-signals
+    set signals-timer 0
+  ]
+
   ;print (mouse-coordinates)
   ask cars[
     move-car
   ]
-
+spawn-person
   ask people[
    move-person
+   ;print direction
   ]
+  ;spawn-person
+  tick
+  set signals-timer signals-timer + 1
+  ;print("signals timer")
+  ;print(signals-timer)
+  ;spawn-person
 end
 
 
 to setup
+  set show-horizontal-signals false
+  set signals-timer 0
   set mouse-coordinates "Mouse Coordinates: (N/A, N/A)"
   clear-all
   reset-ticks
@@ -53,6 +69,7 @@ to setup
   paint-signals
   paint-pedestrian-crossing
 
+  set p-colors [7 8]
   ;color-car-spawns
   ;color-car-death-points
   ;color-humans-spawn-points
@@ -88,30 +105,30 @@ end
 to paint-streets
 
   ask patches[
-   set pcolor green
+   set pcolor 64
   ]
 
   ask patches[
 
     ;;drawing streets
     if (pxcor = -1 or pxcor = 0) or (pycor = -1 or pycor = 0)[
-    set pcolor gray
+      set pcolor gray
     ]
 
     if (pxcor > 0 ) and (pycor >= 8 and pycor <= 9)[
-     set pcolor gray
+      set pcolor gray
     ]
 
     if (pxcor < -1 ) and (pycor <= -8 and pycor >= -9)[
-     set pcolor gray
+      set pcolor gray
     ]
 
     if (pxcor >= 8 and pxcor <= 9 ) and (pycor < 0)[
-     set pcolor gray
+      set pcolor gray
     ]
 
     if (pxcor >= -9 and pxcor <= -8 ) and (pycor > 0)[
-     set pcolor gray
+      set pcolor gray
     ]
   ]
 end
@@ -119,50 +136,50 @@ end
 to paint-pedestrians-ways
   ask patches[
     if (pycor = 1) and not (pxcor = -9 or pxcor = -8 or pxcor = -1 or pxcor = 0) [
-    set pcolor 7
+      set pcolor 7
     ]
 
     if (pycor = -2) and not (pxcor = -1 or pxcor = 0 or pxcor = 9 or pxcor = 8) [
-    set pcolor 7
+      set pcolor 7
     ]
 
     if (pycor = -7) and (pxcor < -1) [
-    set pcolor 7
+      set pcolor 7
     ]
     if (pycor = -10) and (pxcor < -1) [
-    set pcolor 7
+      set pcolor 7
     ]
 
     if (pycor = 7) and (pxcor > 0) [
-    set pcolor 7
+      set pcolor 7
     ]
 
     if (pycor = 10) and (pxcor > 0) [
-    set pcolor 7
+      set pcolor 7
     ]
 
     if (pycor < -1) and (pxcor = 7)[
-     set pcolor 7
+      set pcolor 7
     ]
 
     if (pycor < -1) and (pxcor = 10)[
-     set pcolor 7
+      set pcolor 7
     ]
 
     if (pycor > 0) and (pxcor = -10)[
-     set pcolor 7
+      set pcolor 7
     ]
 
     if (pycor > 0) and (pxcor = -7)[
-     set pcolor 7
+      set pcolor 7
     ]
 
     if not (pycor = 0 or pycor = -1 or pycor = -8 or pycor = -9) and (pxcor = -2)[
-     set pcolor 7
+      set pcolor 7
     ]
 
     if not (pycor = 0 or pycor = -1 or pycor = 8 or pycor = 9) and (pxcor = 1)[
-     set pcolor 7
+      set pcolor 7
     ]
   ]
 end
@@ -171,35 +188,35 @@ to paint-signals
   set signals [[-9 3] [-4 -1] [0 -4] [3 0] [-1 3] [3 9] [-4 -9] [9 -4]]
 
   ask patch -9 3[
-    set pcolor red
+    set pcolor green
   ]
 
   ask patch -4 -1[
-   set pcolor red
-  ]
-
-  ask patch 0 -4[
     set pcolor red
   ]
 
+  ask patch 0 -4[
+    set pcolor green
+  ]
+
   ask patch 3 0[
-   set pcolor red
+    set pcolor red
   ]
 
   ask patch -1 3[
-   set pcolor red
+    set pcolor green
   ]
 
   ask patch 3 9[
-   set pcolor red
+    set pcolor green
   ]
 
   ask patch -4 -9[
-   set pcolor red
+    set pcolor green
   ]
 
   ask patch 9 -4[
-   set pcolor red
+    set pcolor green
   ]
 end
 
@@ -421,7 +438,7 @@ to spawn-car
 
     setxy x y
     set shape "car"
-    set color random 140
+    set color yellow
   ]
 end
 
@@ -436,7 +453,7 @@ to spawn-person
   ;aquiring x and y from sublist human-spawn-points[i]
   let x item 0 item i human-spawn-points
   let y item 1 item i human-spawn-points
-  create-people 1 [
+  create-people person-per-tick [
     (ifelse (x = 1 or x = -2 or x = -7 or x = -10) and (y = 16)[
        set direction "s"
       ]
@@ -453,7 +470,7 @@ to spawn-person
 
     setxy x y
     set shape "person"
-    set color random red
+    set color red
   ]
 end
 
@@ -488,13 +505,54 @@ to move-person
   let newx 0
   let newy 0
 
+  ;;if meet cross pedestraints
+  (ifelse
+    (direction = "n" or direction = "s")[
+      let wx xcor - 1
+      let ex xcor + 1
+      (ifelse ([pcolor] of patch wx ycor = 8)
+        [
+          let change-direction random 2
+          if(change-direction = 1)[
+            set direction "w"
+          ]
+        ]
+        ([pcolor] of patch ex ycor = 8)[
+          let change-direction random 2
+          if(change-direction = 1)[
+            set direction "e"
+          ]
+        ]
+      )
+    ]
+    (direction = "w" or direction = "e")[
+      let ny ycor + 1
+      let sy ycor - 1
+      (ifelse
+        ([pcolor] of patch xcor ny = 8)[
+          let change-direction random 2
+          if(change-direction = 1)[
+            set direction "n"
+          ]
+        ]
+        ([pcolor] of patch xcor sy = 8)[
+          let change-direction random 2
+          if(change-direction = 1)[
+            set direction "s"
+          ]
+        ]
+      )
+    ]
+  )
+
+  ifelse (wait-for-green self = false)[
 
   ;;if at the end of the way then it changes it's direction
   (ifelse
     (direction = "n")[
       set newy ycor + 1
       ;move-to patch xcor newy
-      if ([pcolor] of patch xcor newy != 7)[
+      if (not member? [pcolor] of patch xcor newy [7 8])[
         let wx xcor - 1
         let ex xcor + 1
         (ifelse
@@ -510,7 +568,7 @@ to move-person
     (direction = "w")[
       set newx xcor - 1
       ;move-to patch newx ycor
-      if ([pcolor] of patch newx ycor != 7)[
+      if (not member? [pcolor] of patch newx ycor [7 8])[
         let ny ycor + 1
         let sy ycor - 1
         (ifelse
@@ -526,7 +584,7 @@ to move-person
     (direction = "e")[
       set newx xcor + 1
       ;move-to patch newx ycor
-      if ([pcolor] of patch newx ycor != 7)[
+      if (not member? [pcolor] of patch newx ycor [7 8])[
         let ny ycor + 1
         let sy ycor - 1
         (ifelse
@@ -542,7 +600,7 @@ to move-person
     (direction = "s")[
       set newy ycor - 1
       ;move-to patch xcor newy
-      if ([pcolor] of patch xcor newy != 7)[
+      if (not member? [pcolor] of patch xcor newy [7 8])[
         let wx xcor - 1
         let ex xcor + 1
         (ifelse
@@ -581,13 +639,163 @@ to move-person
   if (xcor = 16 or xcor = -16) or (ycor = 16 or ycor = -16)[
    die
   ]
+  ]
+  [
 
-  ;fd 1
+  ]
+
+
+end
+
+;;check if person wait for green light
+to-report wait-for-green [cars-agent]
+  let newx 0
+  let newy 0
+  let _wait false
+;          print("chodnik: ")
+;        print([pcolor] of patch xcor ycor)
+  ;;if at the end of the way then it changes it's direction
+  (ifelse
+    (direction = "n")[
+      set newy ycor + 1
+      ;move-to patch xcor newy
+      if ([pcolor] of patch xcor newy = 8 and [pcolor] of patch xcor ycor = 7)[
+
+;        print("pasy: ")
+;        print([pcolor] of patch xcor newy)
+;        print("chodnik: ")
+;        print([pcolor] of patch xcor ycor)
+        set _wait true
+      ]
+    ]
+    (direction = "w")[
+      set newx xcor - 1
+      ;move-to patch newx ycor
+      if ([pcolor] of patch newx ycor = 8 and [pcolor] of patch xcor ycor = 7)[
+;                print("pasy: ")
+;        print([pcolor] of patch newx ycor)
+;        print("chodnik: ")
+;        print([pcolor] of patch xcor ycor)
+        set _wait true
+      ]
+    ]
+    (direction = "e")[
+      set newx xcor + 1
+      ;move-to patch newx ycor
+      if ([pcolor] of patch newx ycor = 8 and [pcolor] of patch xcor ycor = 7)[
+;                print("pasy: ")
+;        print([pcolor] of patch newx ycor)
+;        print("chodnik: ")
+;        print([pcolor] of patch xcor ycor)
+        set _wait true
+      ]
+    ]
+    (direction = "s")[
+      set newy ycor - 1
+      ;move-to patch xcor newy
+      if ([pcolor] of patch xcor newy = 8 and [pcolor] of patch xcor ycor = 7)[
+;                print("pasy: ")
+;        print([pcolor] of patch xcor newy)
+;        print("chodnik: ")
+;        print([pcolor] of patch xcor ycor)
+        set _wait true
+      ]
+    ]
+  )
+
+  (ifelse
+    (_wait = true)[
+      let green-signals patches with [pcolor = green]
+      let nearby-green-signals green-signals in-radius 2.5
+;      print("green signals")
+;      print( nearby-green-signals)
+;      print(any? nearby-green-signals)
+      report not any? nearby-green-signals
+    ]
+    [
+      report false
+    ]
+  )
+
 end
 
 to change-signals
   ;;CROSS SIGNAL
 
+  (ifelse
+    (show-horizontal-signals = true)[
+      ask patch -4 -1[
+        set pcolor green
+      ]
+
+      ask patch 0 -4[
+        set pcolor red
+      ]
+
+      ask patch 3 0[
+        set pcolor green
+      ]
+
+      ask patch -1 3[
+        set pcolor red
+      ]
+      set show-horizontal-signals false
+    ]
+    [
+      ask patch -4 -1[
+        set pcolor red
+      ]
+
+      ask patch 0 -4[
+        set pcolor green
+      ]
+
+      ask patch 3 0[
+        set pcolor red
+      ]
+
+      ask patch -1 3[
+        set pcolor green
+      ]
+
+      set show-horizontal-signals true
+    ]
+  )
+
+  (ifelse
+    (show-horizontal-signals = false)[
+      ask patch -9 3[
+        set pcolor green
+      ]
+      ask patch 3 9[
+        set pcolor green
+      ]
+
+      ask patch -4 -9[
+        set pcolor red
+      ]
+
+      ask patch 9 -4[
+        set pcolor red
+      ]
+    ]
+    [
+      ask patch -9 3[
+        set pcolor red
+      ]
+      ask patch 3 9[
+        set pcolor red
+      ]
+
+      ask patch -4 -9[
+        set pcolor green
+      ]
+
+      ask patch 9 -4[
+        set pcolor green
+      ]
+    ]
+  )
   ;;OTHERS
 
 end
@@ -751,10 +959,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot count cars"
 
 PLOT
-200
-480
-400
-630
+973
+10
+1770
+580
 People
 NIL
 NIL
@@ -767,6 +975,21 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plot count people"
+
+SLIDER
+718
+377
+890
+410
+person-per-tick
+person-per-tick
+1
+10
+10.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
