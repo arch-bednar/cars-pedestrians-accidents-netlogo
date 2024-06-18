@@ -859,7 +859,7 @@ to auto-signals
           set color-w green
           set show-horizontal-signals false
         ]
-        (show-horizontal-signals = false)[
+        [
           ;print(1111111111)
           set color-n green
           set color-s green
@@ -1331,7 +1331,7 @@ spawn-person-n
 spawn-person-n
 0
 1
-1.0
+0.25
 0.25
 1
 NIL
@@ -1498,7 +1498,7 @@ CHOOSER
 internal-signals-mode
 internal-signals-mode
 "alternately" "clockwise" "counterclockwise"
-1
+2
 
 SWITCH
 294
@@ -1518,7 +1518,7 @@ SWITCH
 503
 cross-signal-n
 cross-signal-n
-1
+0
 1
 -1000
 
@@ -1573,7 +1573,7 @@ SWITCH
 587
 outer-signal-s
 outer-signal-s
-1
+0
 1
 -1000
 
@@ -1595,7 +1595,7 @@ SWITCH
 542
 outer-signal-w
 outer-signal-w
-1
+0
 1
 -1000
 
@@ -1607,7 +1607,7 @@ CHOOSER
 outer-signals-mode
 outer-signals-mode
 "alternately" "clockwise" "counterclockwise"
-2
+0
 
 PLOT
 1534
