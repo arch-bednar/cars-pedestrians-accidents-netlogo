@@ -1,43 +1,33 @@
 globals [
-  hour
   signals ;;array for all city signals
-  car-spawn-points ;;array for all car sprawn points
-  car-spawn-death-points ;;array for cars to die
   human-spawn-points ;;array for all human sprawn points
   mouse-coordinates
-  p-colors
-  signals-timer
-  show-horizontal-signals
-  show-outerhorizontal-signals
-  clockwise-signals
-  clockwise-outer-signals
-  dies-w
-  dies-e
-  dies-s
-  dies-n
-  spawn-n
-  spawn-e
-  spawn-s
-  spawn-w
+  p-colors ;;przechowuje kolory dla pieszego -> [7 8]
+  signals-timer ;;timer dla zmiany sygnalizacji
+  show-horizontal-signals ;;flaga przestawiająca światła naprzemniennie (światła przy skrzyżowaniu)
+  show-outerhorizontal-signals ;;flaga przestawiająca światła naprzemniennie (światła zewnętrzne)
+  clockwise-signals ;;licznik dla świateł poruszających wg wskazówek zegara i przeciwnie dla świateł na skrzyżowaniu
+  clockwise-outer-signals ;;licznik dla świateł poruszających wg wskazówek zegara i przeciwnie dla świateł zewnętrznych
+  dies-w ;;stores data about people died west
+  dies-e ;;stores data about people died east
+  dies-s ;;stores data about people died south
+  dies-n ;;stores data about people died north
+  spawn-n ;;stores data about people spawned on north
+  spawn-e ;;stores data about people spawned on east
+  spawn-s ;;stores data about people spawned on south
+  spawn-w ;;stores data about people spawned on west
 ]
 
 breed [cars car]
 breed [people person]
 
-cars-own[
-  alcohol_intoxication ;;
-  anxiety
-  direction ;it can be "e" -> eatern direction, "w" -> western direction, "n" -> north direction, "s" -> south direction
-]
-
 people-own[
-  anxiety ;;procent
   direction ;it can be "e" -> eatern direction, "w" -> western direction, "n" -> north direction, "s" -> south direction
-  spawn-at
-  dies-at
-  awaits-green
+  spawn-at ;;informs that pedestraint is spawn at: north, west,east,south
+  awaits-green ;;informs that pedestraint await for green light
 ]
 
+;;metoda go -> wykonuje ruch ludzi i zmianę świateł
 to go
   ;; Aktualizacja współrzędnych myszy
   if mouse-inside? [
@@ -46,33 +36,32 @@ to go
 
   ; Wyświetlenie współrzędnych myszy na monitorze
   clear-drawing
-  ;;display-mouse-coordinates
 
-  ; Czekanie na następny krok
+  ; zmiana świateł co 6 przeskoków
   if (signals-timer = 6)[
     change-signals
     set signals-timer 0
   ]
 
-  ;print (mouse-coordinates)
-
-spawn-person
+  ;;spawn ludzi
+  spawn-person
+  ;;ruszanie ludźmi
   ask people[
-   move-person
-   ;print direction
+    move-person
   ]
-  ;spawn-person
+
+  ;;wykonaj przeskok
   tick
-  set signals-timer signals-timer + 1
-  ;print("signals timer")
-  ;print(signals-timer)
-  ;spawn-person
+  set signals-timer signals-timer + 1 ;;zwieksz licznik przeskoku
 end
 
 
 to setup
+  ;;inicjuje zmienne globalne
   set show-horizontal-signals false
   set show-outerhorizontal-signals false
+  set clockwise-signals 0
+  set clockwise-outer-signals 0
   set signals-timer 0
   set dies-w 0
   set dies-e 0
@@ -83,48 +72,25 @@ to setup
   set spawn-s 0
   set spawn-w 0
   set mouse-coordinates "Mouse Coordinates: (N/A, N/A)"
+  set p-colors [7 8]
 
+  ;;resetuje wszystko
   clear-all
   reset-ticks
+
+  ;;rysuje ulice i chodniki
   paint-streets
   paint-pedestrians-ways
-;  paint-signals
+
+  ;;maluje
   change-signals
   paint-pedestrian-crossing
 
-  set p-colors [7 8]
-  ;color-car-spawns
-  ;color-car-death-points
-  ;color-humans-spawn-points
-
+  ;;ustanawia spawn pointy dla ludzi
   set-spawn-points
-
-;  create-people 5 [
-;   set shape "person"
-;   set color red
-;   move-to one-of patches
-;  ]
-  spawn-person
-
-;  create-cars 5[
-;   set shape "car"
-;   set color yellow
-;   move-to one-of patches
-;  ]
-
-;  let i random length car-spawn-points
-;  print(item i car-spawn-points)
-;  print(item 0 item i car-spawn-points )
-;  print(item 1 item i car-spawn-points )
 end
 
-to start
-
-end
-
-;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;
-;             SETUP SECTION
+;;maluje ulice
 to paint-streets
 
   ask patches[
@@ -156,6 +122,7 @@ to paint-streets
   ]
 end
 
+;;maluje chodniki
 to paint-pedestrians-ways
   ask patches[
     if (pycor = 1) and not (pxcor = -9 or pxcor = -8 or pxcor = -1 or pxcor = 0) [
@@ -207,6 +174,7 @@ to paint-pedestrians-ways
   ]
 end
 
+;;maluje sygnalizacje
 to paint-signals
   set signals [[-9 3] [-4 -1] [0 -4] [3 0] [-1 3] [3 9] [-4 -9] [9 -4]]
 
@@ -243,6 +211,7 @@ to paint-signals
   ]
 end
 
+;;maluje przejscia dla pieszych
 to paint-pedestrian-crossing
   ask patches[
    if (pxcor = -9 or pxcor = -8) and (pycor = 2)[
@@ -283,15 +252,17 @@ to paint-pedestrian-crossing
   ]
 end
 
+;;ustawia punkty spawnu dla ludzi
 to set-spawn-points
-  set car-spawn-points[[-9 16][-1 16][-16 -1][-16 -9][0 -16][9 -16][16 9][16 0]]
-  set car-spawn-death-points [[-8 16][0 16][-16 0][-16 -8][-1 -16][8 -16][16 8][16 -1]]
+
+  ;;tablica z punktami
   set human-spawn-points [[-7 16][-10 16][1 16][-2 16][-16 1][-16 -2]
                           [-16 -7][-16 -10][-2 -16][1 -16][7 -16][10 -16]
                           [16 10][16 7][16 1][16 -2]]
 
 end
 
+;;procedura pomocnicza - do malowania
 to color-humans-spawn-points
   ;human-spawn-points [[-7 16][-10 16][1 16][-2 16][-16 1][-16 -2][-16 -7][-16 -10][-2 -16][1 -16][7 -16][10 -16][16 10][16 7][16 1][16 -2]]
 
@@ -361,10 +332,8 @@ to color-humans-spawn-points
     ]
   ]
 end
-;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;
-;            END SETUP SECTION
 
+;;respi ludzi
 to spawn-person
 ;    set human-spawn-points [[-7 16][-10 16][1 16][-2 16]
 ;  [-16 1][-16 -2][-16 -7][-16 -10]
@@ -377,9 +346,11 @@ to spawn-person
   let x item 0 item i human-spawn-points
   let y item 1 item i human-spawn-points
 
+  ;;za pomocą liczby pseudo-losowej losujemy jeden z czterech kierunków świata (n,w,s,e)
   let dir random 4
-  let spawn-chance random 4 + 1
+  let spawn-chance random 4 + 1 ;;szansa na spawn -> patrz kontrolki spawn-person-*
 
+  ;;ustawiamy ludzi
   (ifelse
     (dir = 0)[
       if (spawn-chance <= spawn-person-n * 4)[
@@ -446,66 +417,6 @@ to spawn-person
       ]
     ]
   )
-
-;  create-people person-per-tick[
-;   (ifelse
-;      (dir = 0)[
-;        let tab [1 -2 -7 -10]
-;        let tmp random length tab
-;        set x item tmp tab
-;        set y 16
-;        set direction "s"
-;        set spawn-n spawn-n + 1
-;      ]
-;      (dir = 1)[
-;        let tab [1 -2 -7 -10]
-;        let tmp random length tab
-;        set y item tmp tab
-;        set x -16
-;        set direction "e"
-;        set spawn-w spawn-w + 1
-;      ]
-;      (dir = 2)[
-;        let tab [1 -2 7 10]
-;        let tmp random length tab
-;        set x item tmp tab
-;        set y -16
-;        set direction "n"
-;        set spawn-s spawn-s + 1
-;      ]
-;      (dir = 3)[
-;        let tab [1 -2 7 10]
-;        let tmp random length tab
-;        set y item tmp tab
-;        set x 16
-;        set direction "w"
-;        set spawn-e spawn-e + 1
-;      ]
-;    )
-
-;  create-people person-per-tick [
-;    (ifelse (x = 1 or x = -2 or x = -7 or x = -10) and (y = 16)[
-;      set direction "s"
-;      set spawn-n spawn-n + 1
-;      ]
-;      (x = -16) and (y = 1 or y = -2 or y = -7 or y = -10)[
-;       set direction "e"
-;        set spawn-w spawn-w + 1
-;      ]
-;      (x = 1 or x = -2 or x = 7 or x = 10) and (y = -16)[
-;        set direction "n"
-;        set spawn-s spawn-s + 1
-;      ]
-;      (x = 16) and (y = 1 or y = -2 or y = 7 or y = 10)[
-;        set direction "w"
-;        set spawn-e spawn-e + 1
-;      ]
-;    )
-
-;    setxy x y
-;    set shape "person"
-;    set color red
-;  ]
 end
 
 to move-person
@@ -733,22 +644,18 @@ to move-person
     (ifelse
       (xcor = 16)[
         set dies-e dies-e + 1
-        set dies-at "e"
         die
       ]
       (xcor = -16)[
         set dies-w dies-w + 1
-        set dies-at "w"
         die
       ]
       (ycor = 16)[
         set dies-n dies-n + 1
-        set dies-at "n"
         die
       ]
       (ycor = -16)[
         set dies-s dies-s + 1
-        set dies-at "s"
         die
       ]
     )
@@ -758,24 +665,17 @@ to move-person
   ]
 end
 
-;;check if person wait for green light
+;;osoba czeka na zielone światło
 to-report wait-for-green [cars-agent]
   let newx 0
   let newy 0
   let _wait false
-;          print("chodnik: ")
-;        print([pcolor] of patch xcor ycor)
-  ;;if at the end of the way then it changes it's direction
+
   (ifelse
     (direction = "n")[
       set newy ycor + 1
       ;move-to patch xcor newy
       if ([pcolor] of patch xcor newy = 8 and [pcolor] of patch xcor ycor = 7)[
-
-;        print("pasy: ")
-;        print([pcolor] of patch xcor newy)
-;        print("chodnik: ")
-;        print([pcolor] of patch xcor ycor)
         set _wait true
       ]
     ]
@@ -783,32 +683,18 @@ to-report wait-for-green [cars-agent]
       set newx xcor - 1
       ;move-to patch newx ycor
       if ([pcolor] of patch newx ycor = 8 and [pcolor] of patch xcor ycor = 7)[
-;                print("pasy: ")
-;        print([pcolor] of patch newx ycor)
-;        print("chodnik: ")
-;        print([pcolor] of patch xcor ycor)
         set _wait true
       ]
     ]
     (direction = "e")[
       set newx xcor + 1
-      ;move-to patch newx ycor
       if ([pcolor] of patch newx ycor = 8 and [pcolor] of patch xcor ycor = 7)[
-;                print("pasy: ")
-;        print([pcolor] of patch newx ycor)
-;        print("chodnik: ")
-;        print([pcolor] of patch xcor ycor)
         set _wait true
       ]
     ]
     (direction = "s")[
       set newy ycor - 1
-      ;move-to patch xcor newy
       if ([pcolor] of patch xcor newy = 8 and [pcolor] of patch xcor ycor = 7)[
-;                print("pasy: ")
-;        print([pcolor] of patch xcor newy)
-;        print("chodnik: ")
-;        print([pcolor] of patch xcor ycor)
         set _wait true
       ]
     ]
@@ -818,9 +704,6 @@ to-report wait-for-green [cars-agent]
     (_wait = true)[
       let green-signals patches with [pcolor = green]
       let nearby-green-signals green-signals in-radius 2.5
-;      print("green signals")
-;      print( nearby-green-signals)
-;      print(any? nearby-green-signals)
       report not any? nearby-green-signals
     ]
     [
@@ -830,9 +713,8 @@ to-report wait-for-green [cars-agent]
 
 end
 
+;;procedura do zmiany świateł
 to change-signals
-  ;;CROSS SIGNAL
-  ;print("change0signals")
   (ifelse (automatic-signals = true)[
     auto-signals
     ]
@@ -842,6 +724,7 @@ to change-signals
   )
 end
 
+;;automatyczna sygnalizacja
 to auto-signals
   let color-n red
   let color-s red
@@ -1051,6 +934,7 @@ to auto-signals
   ]
 end
 
+;;ręczna sygnalizacja
 to manual-signals
   let signal-n red
   let signal-s red
@@ -1120,7 +1004,6 @@ to manual-signals
   ]
 
 end
-  ;;OTHERS
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -1507,7 +1390,7 @@ SWITCH
 717
 automatic-signals
 automatic-signals
-1
+0
 1
 -1000
 
