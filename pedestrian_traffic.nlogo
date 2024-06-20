@@ -1,8 +1,5 @@
 globals [
-  signals ;;array for all city signals
-  human-spawn-points ;;array for all human sprawn points
-  mouse-coordinates
-  p-colors ;;przechowuje kolory dla pieszego -> [7 8]
+;  mouse-coordinates
   signals-timer ;;timer dla zmiany sygnalizacji
   show-horizontal-signals ;;flaga przestawiająca światła naprzemniennie (światła przy skrzyżowaniu)
   show-outerhorizontal-signals ;;flaga przestawiająca światła naprzemniennie (światła zewnętrzne)
@@ -18,7 +15,6 @@ globals [
   spawn-w ;;stores data about people spawned on west
 ]
 
-breed [cars car]
 breed [people person]
 
 people-own[
@@ -29,12 +25,6 @@ people-own[
 
 ;;metoda go -> wykonuje ruch ludzi i zmianę świateł
 to go
-  ;; Aktualizacja współrzędnych myszy
-  if mouse-inside? [
-    set mouse-coordinates (word "Mouse Coordinates: (" mouse-xcor ", " mouse-ycor ")")
-  ]
-
-  ; Wyświetlenie współrzędnych myszy na monitorze
   clear-drawing
 
   ; zmiana świateł co 6 przeskoków
@@ -45,6 +35,7 @@ to go
 
   ;;spawn ludzi
   spawn-person
+
   ;;ruszanie ludźmi
   ask people[
     move-person
@@ -71,8 +62,6 @@ to setup
   set spawn-e 0
   set spawn-s 0
   set spawn-w 0
-  set mouse-coordinates "Mouse Coordinates: (N/A, N/A)"
-  set p-colors [7 8]
 
   ;;resetuje wszystko
   clear-all
@@ -82,12 +71,10 @@ to setup
   paint-streets
   paint-pedestrians-ways
 
-  ;;maluje
+  ;;maluje światła i skrzyżowania
   change-signals
   paint-pedestrian-crossing
 
-  ;;ustanawia spawn pointy dla ludzi
-  set-spawn-points
 end
 
 ;;maluje ulice
@@ -176,7 +163,7 @@ end
 
 ;;maluje sygnalizacje
 to paint-signals
-  set signals [[-9 3] [-4 -1] [0 -4] [3 0] [-1 3] [3 9] [-4 -9] [9 -4]]
+  ;set signals [[-9 3] [-4 -1] [0 -4] [3 0] [-1 3] [3 9] [-4 -9] [9 -4]]
 
   ask patch -9 3[
     set pcolor green
@@ -246,21 +233,18 @@ to paint-pedestrian-crossing
       set pcolor 8
     ]
 
-;    if (pxcor < -10) and (pycor = 11)[
-;     set pcolor 7
-;    ]
   ]
 end
 
 ;;ustawia punkty spawnu dla ludzi
-to set-spawn-points
-
-  ;;tablica z punktami
-  set human-spawn-points [[-7 16][-10 16][1 16][-2 16][-16 1][-16 -2]
-                          [-16 -7][-16 -10][-2 -16][1 -16][7 -16][10 -16]
-                          [16 10][16 7][16 1][16 -2]]
-
-end
+;to set-spawn-points
+;
+;  ;;tablica z punktami
+;  set human-spawn-points [[-7 16][-10 16][1 16][-2 16][-16 1][-16 -2]
+;                          [-16 -7][-16 -10][-2 -16][1 -16][7 -16][10 -16]
+;                          [16 10][16 7][16 1][16 -2]]
+;
+;end
 
 ;;procedura pomocnicza - do malowania
 to color-humans-spawn-points
@@ -340,11 +324,8 @@ to spawn-person
 ;  [-2 -16][1 -16][7 -16][10 -16]
 ;                          [16 10][16 7][16 1][16 -2]]
 
-  let i random length human-spawn-points
-
-  ;aquiring x and y from sublist human-spawn-points[i]
-  let x item 0 item i human-spawn-points
-  let y item 1 item i human-spawn-points
+  let x 0
+  let y 0
 
   ;;za pomocą liczby pseudo-losowej losujemy jeden z czterech kierunków świata (n,w,s,e)
   let dir random 4
@@ -734,16 +715,13 @@ to auto-signals
   ;;internal lights
   (ifelse
     (internal-signals-mode = "alternately")[
-      ;print(show-horizontal-signals)
       (ifelse
         (show-horizontal-signals = true)[
-          ;print(2222222222)
           set color-e green
           set color-w green
           set show-horizontal-signals false
         ]
         [
-          ;print(1111111111)
           set color-n green
           set color-s green
           set show-horizontal-signals true
@@ -1132,10 +1110,10 @@ true
 true
 "" ""
 PENS
-"north" 1.0 0 -2674135 true "" "plot dies-n"
-"south" 1.0 0 -13345367 true "" "plot dies-s"
-"west" 1.0 0 -1184463 true "" "plot dies-w"
-"east" 1.0 0 -6459832 true "" "plot dies-e"
+"north" 1.0 0 -8630108 true "" "plot dies-n"
+"south" 1.0 0 -1184463 true "" "plot dies-s"
+"west" 1.0 0 -955883 true "" "plot dies-w"
+"east" 1.0 0 -2674135 true "" "plot dies-e"
 
 PLOT
 1314
@@ -1229,7 +1207,7 @@ spawn-person-s
 spawn-person-s
 0
 1
-1.0
+0.75
 0.25
 1
 NIL
@@ -1244,7 +1222,7 @@ spawn-person-w
 spawn-person-w
 0
 1
-1.0
+0.25
 0.25
 1
 NIL
@@ -1259,7 +1237,7 @@ spawn-person-e
 spawn-person-e
 0
 1
-1.0
+0.5
 0.25
 1
 NIL
@@ -1381,7 +1359,7 @@ CHOOSER
 internal-signals-mode
 internal-signals-mode
 "alternately" "clockwise" "counterclockwise"
-2
+0
 
 SWITCH
 294
@@ -1510,6 +1488,72 @@ true
 PENS
 "move" 1.0 0 -13840069 true "" "plot count people with [awaits-green = false]"
 "wait" 1.0 0 -2674135 true "" "plot count people with [awaits-green = true]"
+
+MONITOR
+1535
+669
+1700
+714
+people wating for green
+count people with [awaits-green = true]
+17
+1
+11
+
+MONITOR
+1706
+668
+1865
+713
+people on the move
+count people with [awaits-green = false]
+17
+1
+11
+
+MONITOR
+1107
+663
+1273
+708
+people spawned at south
+count people with [spawn-at = \"s\"]
+17
+1
+11
+
+MONITOR
+1271
+663
+1436
+708
+people spawned at north
+count people with [spawn-at = \"n\"]
+17
+1
+11
+
+MONITOR
+1107
+707
+1273
+752
+people spawned at west
+count people with [spawn-at = \"w\"]
+17
+1
+11
+
+MONITOR
+1273
+707
+1436
+752
+people spawned at east
+count people with [spawn-at = \"e\"]
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
